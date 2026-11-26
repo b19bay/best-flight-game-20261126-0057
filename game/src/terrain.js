@@ -11,8 +11,9 @@ export function makeValley(seed) {
   const bump = makeNoise(seed + 23, 24, -1, 1);
 
   // Centreline lateral offset (feet) at distance x along the route.
+  // Gentle bends only: a courier plane at 130 kt must be able to track it.
   function centreZ(x) {
-    return 260 * wander(x / 9000) + 120 * bump(x / 3200);
+    return 140 * wander(x / 16000) + 60 * bump(x / 7000);
   }
 
   // Floor height (feet) at (x, z): gentle undulation, rising at the edges.

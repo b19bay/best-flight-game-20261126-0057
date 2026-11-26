@@ -27,6 +27,11 @@ export function renderWorld(ctx, state) {
   const focal = height * 1.05;
   const horizonY = height * 0.42 + plane.pitch * 5;
 
+  // Base coat: the valley floor colour everywhere, so no gap between the
+  // nearest drawn slice and the bottom of the screen ever shows through.
+  ctx.fillStyle = PALETTE.grassB;
+  ctx.fillRect(0, 0, width, height);
+
   // Camera sits behind the aircraft (chase) or at its nose (cockpit).
   const back = view === 'cockpit' ? 2 : 34;
   const cam = {
@@ -39,7 +44,7 @@ export function renderWorld(ctx, state) {
   ctx.save();
   // The world tilts a little with the bank; the aircraft banks more (drawn later).
   ctx.translate(cx, horizonY);
-  ctx.rotate(-plane.bank * DEG * 0.35);
+  ctx.rotate(-plane.bank * DEG * 0.22);
   ctx.translate(-cx, -horizonY);
 
   drawSky(ctx, width, height, horizonY, state.clouds, plane.heading, tick);
@@ -135,18 +140,22 @@ function drawValleyFloor(ctx, valley, cam, plane, focal, horizonY, cx, width, he
     quad(ctx, far.left, near.left, near.mid, far.mid, shade);
     // Right half.
     quad(ctx, far.mid, near.mid, near.right, far.right, shade);
-    // River ribbon.
-    if (far.riverC && near.riverC) {
-      ribbon(ctx, far, near, VALLEY.riverOffset, 46, PALETTE.river, cam, focal, horizonY, cx, valley);
-    }
-    // Road ribbon.
-    if (far.roadC && near.roadC) {
-      ribbon(ctx, far, near, VALLEY.roadOffset, 15, PALETTE.road, cam, focal, horizonY, cx, valley);
-    }
-    // Runway strip, when this slice crosses one.
-    const strip = valley.onStrip(far.wx, far.centre);
-    if (strip) {
-      runwayQuad(ctx, far, near, cam, focal, horizonY, cx, valley, i);
+    // Ribbons fan out absurdly wide when their slice is right under the
+    // camera, so they only draw once the slice is 120 ft ahead.
+    if (far.dist >= 120) {
+      // River ribbon.
+      if (far.riverC && near.riverC) {
+        ribbon(ctx, far, near, VALLEY.riverOffset, 46, PALETTE.river, cam, focal, horizonY, cx, valley);
+      }
+      // Road ribbon.
+      if (far.roadC && near.roadC) {
+        ribbon(ctx, far, near, VALLEY.roadOffset, 15, PALETTE.road, cam, focal, horizonY, cx, valley);
+      }
+      // Runway strip, when this slice crosses one.
+      const strip = valley.onStrip(far.wx, far.centre);
+      if (strip) {
+        runwayQuad(ctx, far, near, cam, focal, horizonY, cx, valley, i);
+      }
     }
   }
 }
@@ -221,6 +230,8 @@ function drawMeadow(ctx, valley, cam, focal, horizonY, cx) {
 }
 
 function quad(ctx, a, b, c, d, color) {
+  // Any corner can fall behind the camera (null projection): skip the quad.
+  if (!a || !b || !c || !d) return;
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(a.sx, a.sy);

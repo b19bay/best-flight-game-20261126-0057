@@ -14,6 +14,11 @@ import { makeAudio } from './audio.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+
+// Surface runtime errors in the title so headless runs can report them.
+window.addEventListener('error', (e) => {
+  document.title = `ERR: ${e.message}`;
+});
 canvas.width = GAME.canvasWidth;
 canvas.height = GAME.canvasHeight;
 
@@ -43,32 +48,52 @@ let windKt = 5;
 let windDir = 300;
 let lastStallHorn = -1000;
 
+const SHOT_STEPS = { cover: 120, rings: 25, cockpit: 150, landing: 180 };
+
 if (shot) {
   // Deterministic screenshot state: place the plane, pick the mission and view.
   missionId = shot.mission;
   mission = freshMission(missionId);
   plane = freshPlane({
-    x: shot.x, z: shot.z, alt: shot.alt, heading: shot.heading,
-    speed: shot.speed, throttle: shot.throttle,
+    x: shot.x, z: valley.centreZ(shot.zRefX || shot.x) + shot.zOff, alt: shot.alt,
+    heading: shot.heading, speed: shot.speed, throttle: shot.throttle,
   });
   plane.bank = shot.bank;
   plane.pitch = shot.pitch;
   view = shot.view;
+  if (shotName === 'rings' || shotName === 'cockpit') {
+    // Rings 1 and 2 are already behind the camera: mark them flown.
+    mission.nextRing = 2;
+    mission.ringsHit = new Set([0, 1]);
+  }
+  // Run the sim synchronously to its screenshot frame: the shot must not
+  // depend on how the browser paces requestAnimationFrame.
+  for (let i = 0; i < (SHOT_STEPS[shotName] || 150); i += 1) step();
+  mode = 'held';
 }
 
-const SHOT_STEPS = { cover: 120, rings: 150, cockpit: 150, landing: 210 };
-
 function autopilot() {
+  // Gentle, lookahead-based steering: chase a point 600 ft ahead, never bank
+  // hard — the autopilot only has to hold a photogenic line, not win a race.
+  // Rings already behind the plane are never chased.
   let targetAlt = 450;
-  let targetZ = valley.centreZ(plane.x);
+  let targetZ = valley.centreZ(plane.x + 600);
   let targetSpeed = 130;
-  if (mission.id === 'rings' && mission.nextRing < RINGS.length) {
-    const ring = RINGS[mission.nextRing];
-    targetZ = valley.centreZ(ring.x) + ring.z;
-    targetAlt = ring.alt;
-    targetSpeed = 135;
+  if (shotName === 'landing') {
+    targetZ = valley.centreZ(plane.x + 600);
+    targetAlt = 2;
+    targetSpeed = 75;
+  } else if (mission.id === 'rings') {
+    let idx = mission.nextRing;
+    while (idx < RINGS.length && RINGS[idx].x < plane.x + 100) idx += 1;
+    if (idx < RINGS.length) {
+      const ring = RINGS[idx];
+      targetZ = valley.centreZ(ring.x) + ring.z;
+      targetAlt = ring.alt;
+      targetSpeed = 135;
+    }
   } else if (mission.id === 'courier') {
-    targetZ = valley.centreZ(VALLEY.stripFar.x0 + 600);
+    targetZ = valley.centreZ(plane.x + 600);
     targetAlt = plane.x > 9400 ? 110 : 450;
     targetSpeed = plane.x > 9400 ? 82 : 130;
   } else {
@@ -79,9 +104,9 @@ function autopilot() {
   const zErr = targetZ - plane.z;
   const altErr = targetAlt - plane.alt;
   return {
-    pitch: clamp(altErr / 150, -1, 1) * 0.7,
-    roll: clamp(zErr / 120, -1, 1) * 0.85 - (plane.bank / 60) * 0.4,
-    throttleDelta: clamp((targetSpeed - plane.speed) / 40, -1, 1),
+    pitch: clamp(altErr / 250, -1, 1) * 0.5,
+    roll: clamp(clamp(zErr / 400, -1, 1) * 0.4 - (plane.bank / 60) * 0.6, -0.45, 0.45),
+    throttleDelta: clamp((targetSpeed - plane.speed) / 80, -1, 1) * 0.6,
     brake: false,
   };
 }

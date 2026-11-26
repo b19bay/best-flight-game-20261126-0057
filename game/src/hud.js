@@ -123,11 +123,6 @@ function drawCockpitPanel(ctx, plane, width, height) {
   drawCompass(ctx, cx + 80, py + 52, 46, plane.heading);
   drawGauge(ctx, cx + 220, py + 52, 46, 'FUEL', Math.round(plane.fuel), 0, 100, '%');
   drawGauge(ctx, cx + 340, py + 52, 46, 'DAMAGE', Math.round(plane.damage), 0, 100, '%');
-  // Glareshield label.
-  ctx.fillStyle = PALETTE.hudAmber;
-  ctx.font = 'bold 13px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('MERIDIAN-7  ·  COURIER', cx, py + 118);
 }
 
 function drawArtificialHorizon(ctx, x, y, r, plane) {

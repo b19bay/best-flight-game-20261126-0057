@@ -61,7 +61,7 @@ export function flyStep(p, input, dt, ground, gust) {
   }
 
   // --- turn: heading follows bank; faster = wider turn ---
-  const turnRate = Math.sin(p.bank * DEG) * (p.speed / 90) * 0.42; // rad/s
+  const turnRate = Math.sin(p.bank * DEG) * (p.speed / 90) * 0.18; // rad/s
   p.heading += turnRate * dt;
 
   // --- vertical speed from pitch and climb power ---
@@ -85,9 +85,9 @@ export function flyStep(p, input, dt, ground, gust) {
   p.z = clamp(p.z, -VALLEY.halfWidth * 1.6, VALLEY.halfWidth * 1.6);
 
   // --- ground contact ---
-  const ground = groundHeightAt(p.x, p.z);
-  if (p.alt <= ground) {
-    p.alt = ground;
+  const groundH = groundHeightAt(p.x, p.z);
+  if (p.alt <= groundH) {
+    p.alt = groundH;
     return touchDown(p, ground);
   }
   p.onGround = false;

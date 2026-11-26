@@ -105,9 +105,10 @@ export const PALETTE = {
 };
 
 // Screenshot states: deterministic setups for the four dossier shots.
+// zOff is the lateral offset from the valley centreline at the shot's x.
 export const SHOTS = {
-  cover: { mission: 'courier', x: 9400, z: -40, alt: 260, heading: 0, speed: 105, throttle: 0.55, bank: 0, pitch: -2, view: 'chase' },
-  rings: { mission: 'rings', x: 3550, z: -60, alt: 430, heading: 0, speed: 135, throttle: 0.75, bank: 12, pitch: 0, view: 'chase' },
-  cockpit: { mission: 'rings', x: 5200, z: 80, alt: 520, heading: 0, speed: 130, throttle: 0.7, bank: -6, pitch: 1, view: 'cockpit' },
-  landing: { mission: 'courier', x: 10800, z: 0, alt: 6, heading: 0, speed: 78, throttle: 0.25, bank: 0, pitch: -1, view: 'chase' },
+  cover: { mission: 'courier', x: 9400, zOff: -40, alt: 300, heading: 0, speed: 105, throttle: 0.55, bank: 0, pitch: -2, view: 'chase' },
+  rings: { mission: 'rings', x: 3400, zRefX: 3800, zOff: -40, alt: 380, heading: 0, speed: 135, throttle: 0.7, bank: 0, pitch: 0, view: 'chase' },
+  cockpit: { mission: 'courier', x: 5200, zOff: 80, alt: 520, heading: 0, speed: 130, throttle: 0.7, bank: 0, pitch: 0, view: 'cockpit' },
+  landing: { mission: 'courier', x: 10600, zRefX: 11000, zOff: 0, alt: 10, heading: 0, speed: 78, throttle: 0.3, bank: 0, pitch: -1, view: 'chase' },
 };
